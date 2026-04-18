@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>LoL Stream Viewer</title>
+  <style>
+    h3 {
+      margin-top: 20px;
+      color: #9147ff; /* Twitchカラー */
+    }
+
+    li {
+      list-style: none;
+      margin-bottom: 10px;
+    }
+
+    img {
+      display: block;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>配信者登録</h1>
+
+  <form id="form">
+    <input type="text" id="twitchName" placeholder="Twitch名" required />
+    <input type="text" id="gameName" placeholder="サモナーネーム (例: Faker)" required />
+    <input type="text" id="tagLine" placeholder="タグ (例: KR1)" required />
+    <input type="hidden" id="region" value="jp1" />
+    <button type="submit">登録</button>
+  </form>
+
+  <hr />
+
+  <h2>配信中一覧</h2>
+  <button id="loadBtn">更新</button>
+
+  <ul id="list"></ul>
+
+  <script>
+    // 登録処理
+    const form = document.getElementById("form");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const data = {
+        twitchName: document.getElementById("twitchName").value,
+        gameName: document.getElementById("gameName").value,
+        tagLine: document.getElementById("tagLine").value,
+        region: document.getElementById("region").value,
+      };
+
+      await fetch("/api/streamers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        alert("エラー: " + result.error);
+        return;
+      }
+
+      alert("登録成功！");
+      form.reset();
+    });
+
+    // 配信一覧取得
+    const loadBtn = document.getElementById("loadBtn");
+
+    loadBtn.addEventListener("click", async () => {
+      const res = await fetch("/api/streamers/live");
+      const data = await res.json();
+
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+
+      const grouped = groupByTier(data);
+
+      // ランク順（上から強い順）
+      const tierOrder = [
+        "CHALLENGER",
+        "GRANDMASTER",
+        "MASTER",
+        "DIAMOND",
+        "EMERALD",
+        "PLATINUM",
+        "GOLD",
+        "SILVER",
+        "BRONZE",
+        "IRON",
+        "Unranked"
+      ];
+
+      tierOrder.forEach((tier) => {
+        if (!grouped[tier]) return;
+
+        // 見出し
+        const title = document.createElement("h3");
+        title.textContent = tier;
+        list.appendChild(title);
+
+        grouped[tier].forEach((s) => {
+          const li = document.createElement("li");
+
+          li.innerHTML = `
+            <a href="${s.url}" target="_blank">
+              <strong>${s.twitchName}</strong>
+            </a>
+            (${s.viewerCount} viewers)<br>
+            ${s.title}<br>
+            ランク: ${s.rank}<br>
+            <img src="${s.thumbnail}" value="jp1" />
+            <hr/>
+          `;
+
+          list.appendChild(li);
+        });
+      });
+
+    });
+
+    function groupByTier(data) {
+      const groups = {};
+
+      data.forEach((s) => {
+      const tier = s.rank ? s.rank.split(" ")[0] : "Unranked";
+
+      if (!groups[tier]) {
+          groups[tier] = [];
+      }
+      groups[tier].push(s);
+    });
+  
+    return groups;
+    }
+  </script>
+</body>
+</html>

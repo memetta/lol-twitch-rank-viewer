@@ -1,13 +1,31 @@
+//いま書いているコードは/app/streamsにアクセスしたらtwitchのlol配信者情報を取得して、/api/twitch/
+// app.js
+// ルーティング
+// API定義
+// アプリ本体
+
 const express = require("express");
-require("dotenv").config();
+const mongoose = require("mongoose");
+//const axios = require("axios");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const streamersRouter = require("./routes/streamers");
+//const twitchRouter = require("./routes/twitch");
+//const streamRouter = require("./routes/stream");
+//const Streamer = require("./models/Streamer");
 
-app.get("/", (req, res) => {
-  res.send("Server is running 🚀");
-});
+//console.log(process.env.TWITCH_CLIENT_ID);
 
-app.listen(PORT, () => {
-  console.log(`Server started on http://localhost:${PORT}`);
-});
+//shift alt A
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.error(err));
+
+//bodyパースミドルウェア
+//JSON形式のbodyが来たら、JavaScriptオブジェクトに変換してreq.bodyに入れておく
+app.use(express.json());
+app.use("/api/streamers", streamersRouter);
+//app.use("/api/twitch",twitchRouter);
+//app.use("/api/streams", streamRouter);
+app.use(express.static("public"));//html読み込み
+module.exports = app;
